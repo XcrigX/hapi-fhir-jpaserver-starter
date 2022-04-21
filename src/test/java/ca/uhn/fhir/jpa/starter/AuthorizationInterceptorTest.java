@@ -138,6 +138,7 @@ class AuthorizationInterceptorTest {
 		assertEquals(ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE, forbiddenOperationException.getMessage());
 	}
 
+	/* REMOVED: we want to allow unknown scopes
 	@ParameterizedTest
 	@ValueSource(strings = {"", "random/thing"})
 	void testBuildRules_readPatient_badScope(String clinicalScope) {
@@ -155,8 +156,9 @@ class AuthorizationInterceptorTest {
 
 		// ASSERT
 		assertEquals("HTTP 403 : HAPI-0333: Access denied by rule: "+clinicalScope+" is not a valid clinical scope", forbiddenOperationException.getMessage());
-	}
+	}*/
 
+	/* REMOVED: we want to allow unknown scopes
 	@Test
 	void testBuildRules_readPatient_invalidClinicalScopeOperation() {
 		// ARRANGE
@@ -172,7 +174,7 @@ class AuthorizationInterceptorTest {
 
 		// ASSERT
 		assertEquals("HTTP 403 : HAPI-0333: Access denied by rule: unsupported is not a legal operation", forbiddenOperationException.getMessage());
-	}
+	}*/
 
 	@Test
 	void testBuildRules_readPatient_unmappedCompartment() {
@@ -854,6 +856,7 @@ class AuthorizationInterceptorTest {
 		assertEquals("HTTP 401 : No scope provided", authenticationException.getMessage());
 	}
 
+	/* REMOVED: we want to allow unknown scopes
 	@Test
 	void testBuildRules_searchOperation_invalidScope() {
 		// ARRANGE
@@ -873,6 +876,26 @@ class AuthorizationInterceptorTest {
 
 		// ASSERT
 		assertEquals(String.format("HTTP 401 : %s is not a valid clinical scope", randomScope), authenticationException.getMessage());
+	}*/
+	
+	@ParameterizedTest
+	@MethodSource({"getWriteObservationUnknownScopes"})
+	void testBuildRules_createObservationOnPatient_providedJwtContainsWriteScopesAndPatientIdAndUnknownScopes(Map<String, Object> claims) {
+		// ARRANGE
+		IBaseResource mockPatient = patientResourceDao.create(new Patient()).getResource();
+		String mockId = mockPatient.getIdElement().getIdPart();
+
+		claims.put("patient", mockId);
+		mockJwtWithClaims(claims);
+
+		// ACT
+		Observation observation = new Observation();
+		observation.setSubject(new Reference(mockPatient.getIdElement()));
+		ICreateTyped observationCreateExecutable = client.create().resource(observation).withAdditionalHeader("Authorization", MOCK_HEADER);
+		MethodOutcome outcome = observationCreateExecutable.execute();
+
+		// ASSERT
+		assertTrue(outcome.getCreated());
 	}
 
 	private static Stream<Arguments> getReadPatientClinicalScopes() {
@@ -972,6 +995,20 @@ class AuthorizationInterceptorTest {
 			Arguments.of(
 				new HashMap<String, String>() {{
 					put("scope", "user/*.*");
+				}}
+			)
+		);
+	}
+	
+	/**
+	 * 
+	 * @return return scopes unknown to SMART authorization which may be in the JWT token, such as launch/patient 
+	 */
+	private static Stream<Arguments> getWriteObservationUnknownScopes() {
+		return Stream.of(
+			Arguments.of(
+				new HashMap<String, String>() {{
+					put("scope", "launch/patient patient/Observation.*");
 				}}
 			)
 		);
