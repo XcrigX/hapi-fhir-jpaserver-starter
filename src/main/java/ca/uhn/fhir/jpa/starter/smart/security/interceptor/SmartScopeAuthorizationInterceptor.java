@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
+import com.nimbusds.jose.shaded.json.JSONArray;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,8 +47,14 @@ public class SmartScopeAuthorizationInterceptor extends AuthorizationInterceptor
 		if (token == null) {
 			return ruleList;
 		}
-
-
+		
+		// Check if admin user
+		JSONArray groups = token.getClaim("group");
+		if (groups != null || groups.contains("fhirAdmin")) {
+			ruleList.addAll(authRuleBuilder.allowAll().build());
+			return ruleList;
+		}
+		
 		try {
 			Set<SmartClinicalScope> scopes = getSmartScopes(token);
 			Map<String, Object> claims = token.getClaims();
