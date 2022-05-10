@@ -9,6 +9,7 @@ import ca.uhn.fhir.rest.api.RequestTypeEnum;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
 import ca.uhn.fhir.rest.server.interceptor.auth.*;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
@@ -30,7 +31,12 @@ public class SmartScopeAuthorizationInterceptor extends AuthorizationInterceptor
 	public static final String RULE_DENY_ALL_UNKNOWN_REQUESTS = "Deny all requests that do not match any pre-defined rules";
 
 	private final JwtDecoder jwtDecoder;
-
+	
+	@Value("${hapi.fhir.smart_admin_group_enabled}")
+	private boolean smartAdminAccessEnabled;
+	
+	@Value("${hapi.fhir.smart_admin_group_claim}")
+	private String smartAdminGroupClaim;
 
 	public SmartScopeAuthorizationInterceptor(List<SmartAuthorizationRuleBuilder> ruleBuilders, JwtDecoder jwtDecoder) {
 		this.setFlags(AuthorizationFlagsEnum.DO_NOT_PROACTIVELY_BLOCK_COMPARTMENT_READ_ACCESS);
@@ -49,10 +55,18 @@ public class SmartScopeAuthorizationInterceptor extends AuthorizationInterceptor
 		}
 		
 		// Check if admin user
-		JSONArray groups = token.getClaim("group");
-		if (groups != null || groups.contains("fhirAdmin")) {
-			ruleList.addAll(authRuleBuilder.allowAll().build());
-			return ruleList;
+		if( smartAdminAccessEnabled && smartAdminGroupClaim != null ) {
+			
+			List<String> groups = token.getClaimAsStringList("group");
+			if( groups != null ) {
+				for( String group : groups ) {
+					if ( smartAdminGroupClaim.equals(group) ) {
+						ruleList.addAll(authRuleBuilder.allowAll().build());
+						//can short-circuit here since we are returning a rule with unrestricted access
+						return ruleList;
+					}
+				}
+			}
 		}
 		
 		try {

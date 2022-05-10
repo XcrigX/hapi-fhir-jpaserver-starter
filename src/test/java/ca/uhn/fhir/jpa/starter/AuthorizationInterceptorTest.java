@@ -2,6 +2,7 @@ package ca.uhn.fhir.jpa.starter;
 
 import ca.uhn.fhir.context.FhirContext;
 import ca.uhn.fhir.jpa.api.dao.IFhirResourceDao;
+import ca.uhn.fhir.jpa.starter.config.FhirServerConfigCommon;
 import ca.uhn.fhir.rest.api.MethodOutcome;
 import ca.uhn.fhir.rest.client.api.IGenericClient;
 import ca.uhn.fhir.rest.client.api.ServerValidationModeEnum;
@@ -18,6 +19,7 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.web.server.LocalServerPort;
@@ -44,6 +46,8 @@ import static org.mockito.Mockito.when;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = Application.class)
 @ActiveProfiles("smart")
 class AuthorizationInterceptorTest {
+	
+	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(AuthorizationInterceptorTest.class);
 
 	public static final String ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE = "HTTP 403 : HAPI-0333: Access denied by rule: Deny all requests that do not match any pre-defined rules";
 	public static final String ACCESS_DENIED_BY_RULE_DENY_ALL_REQUESTS_IF_NO_ID_EXCEPTION_MESSAGE = "HTTP 403 : HAPI-0333: Access denied by rule: Deny ALL patient requests if no launch context is given!";
@@ -59,11 +63,14 @@ class AuthorizationInterceptorTest {
 	@Autowired
 	private IFhirResourceDao<Observation> observationResourceDao;
 
-	@Autowired
+	@Autowired 
 	private IFhirResourceDao<Practitioner> practitionerResourceDao;
 
 	@LocalServerPort
 	private int port;
+	
+	@Value("${hapi.fhir.smart_admin_group_claim}")
+	private String smartAdminGroupClaim;
 
 	private static final String MOCK_JWT = "FAKE_TOKEN";
 	private static final String MOCK_HEADER = "Bearer " + MOCK_JWT;
@@ -243,6 +250,30 @@ class AuthorizationInterceptorTest {
 		// ASSERT
 		assertEquals(ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE, forbiddenOperationException.getMessage());
 	}
+	
+	@ParameterizedTest
+	@MethodSource("getReadPatientClinicalScopes")
+	void testBuildRules_readPatient_providedJwtContainsReadScopesButWrongPatientIdAsAdmin(Map<String, Object> claims) {
+		// ARRANGE
+		IBaseResource mockPatient = patientResourceDao.create(new Patient()).getResource();
+		String mockId = mockPatient.getIdElement().getIdPart();
+
+
+		claims.put("patient", mockId);
+		claims.put("group", smartAdminGroupClaim);
+		
+		mockJwtWithClaims(claims);
+
+		// ACT
+		IReadExecutable<IBaseResource> patientReadExecutable = client.read().resource("Patient").withId("wrong").withAdditionalHeader("Authorization", MOCK_HEADER);
+		
+		// read should be a success with no exceptions thrown
+		
+		//ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class, patientReadExecutable::execute);
+
+		// ASSERT
+		//assertEquals(ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE, forbiddenOperationException.getMessage());
+	}
 
 
 	@ParameterizedTest
@@ -285,6 +316,31 @@ class AuthorizationInterceptorTest {
 		// ASSERT
 		assertEquals(ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE, forbiddenOperationException.getMessage());
 	}
+	
+	@ParameterizedTest
+	@MethodSource("getWritePatientClinicalScopes")
+	void testBuildRules_createObservationOnPatient_providedJwtContainsWriteScopesButWrongPatientIdAsAdmin(Map<String, Object> claims) {
+		// ARRANGE
+		IBaseResource mockPatient = patientResourceDao.create(new Patient()).getResource();
+		String mockId = mockPatient.getIdElement().getIdPart();
+
+		claims.put("patient", mockId);
+		claims.put("group", smartAdminGroupClaim);
+		
+		ourLog.trace("smartAdminGroupClaim->{}", smartAdminGroupClaim);
+		
+		mockJwtWithClaims(claims);
+		
+		// ACT
+		Observation observation = new Observation();
+		observation.setSubject(new Reference(mockPatient.getIdElement()));
+		ICreateTyped observationCreateExecutable = client.create().resource(observation).withAdditionalHeader("Authorization", MOCK_HEADER);
+		MethodOutcome outcome = observationCreateExecutable.execute();
+
+		// ASSERT
+		assertTrue(outcome.getCreated());
+	}
+	
 
 	@ParameterizedTest
 	@MethodSource({"getWritePatientClinicalScopes"})
