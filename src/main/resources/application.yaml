@@ -214,3 +214,23 @@ hapi:
 #  protocol: 'http'
 #  schema_management_strategy: CREATE
 #  username: SomeUsername
+
+# see https://hl7.org/fhir/smart-app-launch/conformance.html#response
+smart: 
+  wellknown: 
+    issuer: 
+    jwks_uri: 
+    authorization_endpoint: 
+    grant_types_supported: 
+    token_endpoint: 
+    token_endpoint_auth_methods_supported: 
+    registration_endpoint: 
+    scopes_supported: 
+    response_types_supported: 
+    management_endpoint: 
+    introspection_endpoint : 
+    revocation_endpoint : 
+    capabilities: 
+    code_challenge_methods_supported: 
+    
+    
