@@ -7,31 +7,47 @@ entries:
         # added, changed, deprecated, removed, fixed, and security.
         - kind: changed
           description: |
-            updated HAPI FHIR starter image to 5.7.0
+            BREAKING CHANGE: updated HAPI FHIR starter image to v6.0.1.
+            See <https://github.com/hapifhir/hapi-fhir/releases/tag/v6.0.0> for all application changes.
         - kind: changed
           description: |
-            BREAKING CHANGE: updated included PostgreSQL-subchart to v11
+            updated included PostgreSQL-subchart to v11.6.2
+        - kind: fixed
+          description: |
+            use a fixed image for the wait-for-database container (docker.io/bitnami/postgresql:14.3.0-debian-10-r20)
+            instead of relying on the PostgreSQL sub-chart values
         - kind: changed
           description: |
-            BREAKING CHANGE: removed ability to override the image flavor.
-            The one based on distroless is now the new default.
+            expose actuator/metrics endpoint on a separate port (8081)
+        - kind: added
+          description: |
+            support for monitoring metrics using ServiceMonitor CRDs
+        - kind: changed
+          description: |
+            switched liveness and readiness probes to Spring Boot actuator endpoints
+        - kind: changed
+          description: |
+            BREAKING CHANGE: removed included `NetworkPolicy`, which is subject to more thorough rework
+        - kind: added
+          description: |
+            allow configuring `topologySpreadConstraints` for the deployment
       artifacthub.io/license: Apache-2.0
     apiVersion: v2
-    appVersion: v5.7.0
-    created: "2022-04-11T23:06:08.333724491Z"
+    appVersion: v6.0.1
+    created: "2022-06-30T18:29:38.182249142Z"
     dependencies:
     - condition: postgresql.enabled
       name: postgresql
       repository: https://charts.bitnami.com/bitnami
-      version: 11.1.19
+      version: 11.6.2
     description: A Helm chart for deploying the HAPI FHIR JPA server starter on Kubernetes.
-    digest: 9b219a1ecb8e66b55f21abb3068599795238f9eff0240da94704a34cf1d755c8
+    digest: 84476b9560bf5d0925972391e020bf8ac294680e0953abc418b44b9b3f467309
     home: https://github.com/hapifhir/hapi-fhir-jpaserver-starter
     name: hapi-fhir-jpaserver
     sources:
     - https://github.com/hapifhir/hapi-fhir-jpaserver-starter
     type: application
     urls:
-    - https://github.com/XcrigX/hapi-fhir-jpaserver-starter/releases/download/helm-v0.8.0/hapi-fhir-jpaserver-0.8.0.tgz
-    version: 0.8.0
-generated: "2022-04-11T23:06:08.333737992Z"
+    - https://github.com/XcrigX/hapi-fhir-jpaserver-starter/releases/download/helm-v0.9.0/hapi-fhir-jpaserver-0.9.0.tgz
+    version: 0.9.0
+generated: "2022-06-30T18:29:38.182262442Z"
