@@ -18,6 +18,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.boot.web.server.LocalServerPort;
@@ -43,6 +44,8 @@ import static org.mockito.Mockito.when;
 @ActiveProfiles("smart")
 class AuthorizationInterceptorTest {
 
+	private static final org.slf4j.Logger ourLog = org.slf4j.LoggerFactory.getLogger(AuthorizationInterceptorTest.class);
+
 	/**
 	 * <h1>BEWARE</h1>
 	 *
@@ -62,11 +65,14 @@ class AuthorizationInterceptorTest {
 	@Autowired
 	private IFhirResourceDao<Observation> observationResourceDao;
 
-	@Autowired
+	@Autowired 
 	private IFhirResourceDao<Practitioner> practitionerResourceDao;
 
 	@LocalServerPort
 	private int port;
+
+	@Value("${hapi.fhir.smart_admin_group_claim}")
+	private String smartAdminGroupClaim;
 
 	private static final String MOCK_JWT = "FAKE_TOKEN";
 	private static final String MOCK_HEADER = "Bearer " + MOCK_JWT;
@@ -212,6 +218,7 @@ class AuthorizationInterceptorTest {
 	@ParameterizedTest
 	@MethodSource("getReadPatientClinicalScopes")
 	void testBuildRules_searchPatient_providedJwtContainsReadScopesButWrongPatientId(Map<String, Object> claims) {
+
 		// ARRANGE
 		IBaseResource mockPatient = patientResourceDao.create(new Patient()).getResource();
 		String mockId = mockPatient.getIdElement().getIdPart();
@@ -227,6 +234,28 @@ class AuthorizationInterceptorTest {
 
 		// ASSERT
 		Assertions.assertTrue(forbiddenOperationException.getMessage().contains("HTTP 403"));
+	}
+
+	@ParameterizedTest
+	@MethodSource("getReadPatientClinicalScopes")
+	void testBuildRules_readPatient_providedJwtContainsReadScopesButWrongPatientIdAsAdmin(Map<String, Object> claims) {
+
+		// ARRANGE
+		IBaseResource mockPatient = patientResourceDao.create(new Patient()).getResource();
+		String mockId = mockPatient.getIdElement().getIdPart();
+
+		claims.put("patient", "wrong");
+		claims.put("group", smartAdminGroupClaim);
+
+		mockJwtWithClaims(claims);
+
+		// ACT
+		IReadExecutable<IBaseResource> patientReadExecutable = client.read().resource("Patient").withId(mockId)
+				.withAdditionalHeader("Authorization", MOCK_HEADER);
+		IBaseResource actualPatient = patientReadExecutable.execute();
+
+		// ASSERT
+		assertEquals(mockId, actualPatient.getIdElement().getIdPart());
 	}
 
 	@ParameterizedTest
@@ -269,6 +298,31 @@ class AuthorizationInterceptorTest {
 		// ASSERT
 		assertEquals(ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE, forbiddenOperationException.getMessage());
 	}
+
+	@ParameterizedTest
+	@MethodSource("getWritePatientClinicalScopes")
+	void testBuildRules_createObservationOnPatient_providedJwtContainsWriteScopesButWrongPatientIdAsAdmin(Map<String, Object> claims) {
+		// ARRANGE
+		IBaseResource mockPatient = patientResourceDao.create(new Patient()).getResource();
+		String mockId = mockPatient.getIdElement().getIdPart();
+
+		claims.put("patient", mockId);
+		claims.put("group", smartAdminGroupClaim);
+
+		ourLog.trace("smartAdminGroupClaim->{}", smartAdminGroupClaim);
+
+		mockJwtWithClaims(claims);
+
+		// ACT
+		Observation observation = new Observation();
+		observation.setSubject(new Reference(mockPatient.getIdElement()));
+		ICreateTyped observationCreateExecutable = client.create().resource(observation).withAdditionalHeader("Authorization", MOCK_HEADER);
+		MethodOutcome outcome = observationCreateExecutable.execute();
+
+		// ASSERT
+		assertTrue(outcome.getCreated());
+	}
+
 
 	@ParameterizedTest
 	@MethodSource({"getWritePatientClinicalScopes"})
@@ -864,7 +918,7 @@ class AuthorizationInterceptorTest {
 		// ASSERT
 		assertEquals("HTTP 403 : No scope provided", authenticationException.getMessage());
 	}
-	
+
 	@ParameterizedTest
 	@MethodSource({"getWriteObservationUnknownScopes"})
 	void testBuildRules_createObservationOnPatient_providedJwtContainsWriteScopesAndPatientIdAndUnknownScopes(Map<String, Object> claims) {
@@ -1045,19 +1099,19 @@ class AuthorizationInterceptorTest {
 						)
 				);
 	}
-	
+
 	/**
 	 * 
 	 * @return return scopes unknown to SMART authorization which may be in the JWT token, such as launch/patient 
 	 */
 	private static Stream<Arguments> getWriteObservationUnknownScopes() {
 		return Stream.of(
-			Arguments.of(
-				new HashMap<String, String>() {{
-					put("scope", "launch/patient patient/Observation.*");
-				}}
-			)
-		);
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "launch/patient patient/Observation.*");
+						}}
+						)
+				);
 	}
 
 
