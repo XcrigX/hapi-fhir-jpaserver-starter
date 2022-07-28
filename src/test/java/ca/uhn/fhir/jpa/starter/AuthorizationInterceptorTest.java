@@ -68,6 +68,9 @@ class AuthorizationInterceptorTest {
 	@Autowired 
 	private IFhirResourceDao<Practitioner> practitionerResourceDao;
 
+	@Autowired
+	private IFhirResourceDao<Organization> organizationResourceDao;
+
 	@LocalServerPort
 	private int port;
 
@@ -996,6 +999,34 @@ class AuthorizationInterceptorTest {
 
 		assertEquals(1, searchBundle.getEntry().size());
 		assertEquals(searchBundle.getEntry().get(0).getResource().getIdElement().getIdPart(), obsId);
+	}
+
+	@Test
+	void testBuildRules_searchRecords_OrganizationAllowed() {
+
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("scope", "patient/*.read");
+
+		// create a patient
+		IBaseResource patient = patientResourceDao.create(new Patient()).getResource();
+		String patId = patient.getIdElement().getIdPart();
+
+		claims.put("patient", patId);
+		mockJwtWithClaims(claims);
+
+		// create an Organization
+		IBaseResource org = organizationResourceDao.create(new Organization()).getResource();
+		String orgId = org.getIdElement().getIdPart();
+
+		// search for all Organizations
+		Bundle searchBundle = client.search().forResource(Organization.class).returnBundle(Bundle.class).withAdditionalHeader("Authorization", MOCK_HEADER).execute();
+		assertEquals(1, searchBundle.getEntry().size());
+		assertEquals(searchBundle.getEntry().get(0).getResource().getIdElement().getIdPart(), orgId);
+
+		// now search by specific ID
+		Organization readOrg = client.read().resource(Organization.class).withId(orgId).withAdditionalHeader("Authorization", MOCK_HEADER).execute();
+		assertNotNull(readOrg);
+		assertEquals(readOrg.getIdElement().getIdPart(), orgId);
 	}
 
 	private static Stream<Arguments> getReadPatientClinicalScopes() {
