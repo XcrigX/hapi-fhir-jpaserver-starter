@@ -63,6 +63,9 @@ class AuthorizationInterceptorTest {
 	private IFhirResourceDao<Patient> patientResourceDao;
 
 	@Autowired
+	private IFhirResourceDao<Endpoint> endpointResourceDao;
+
+	@Autowired
 	private IFhirResourceDao<Observation> observationResourceDao;
 
 	@Autowired 
@@ -70,6 +73,9 @@ class AuthorizationInterceptorTest {
 
 	@Autowired
 	private IFhirResourceDao<Organization> organizationResourceDao;
+
+	@Autowired
+	private IFhirResourceDao<Group> groupResourceDao;
 
 	@LocalServerPort
 	private int port;
@@ -1002,7 +1008,36 @@ class AuthorizationInterceptorTest {
 	}
 
 	@Test
-	void testBuildRules_searchRecords_OrganizationAllowed() {
+	void testBuildRules_searchRecords_NonExplicitlyAllowedResource() {
+		Map<String, Object> claims = new HashMap<>();
+		claims.put("scope", "patient/*.read");
+
+		// create a patient
+		IBaseResource patient = patientResourceDao.create(new Patient()).getResource();
+		String patId = patient.getIdElement().getIdPart();
+
+		claims.put("patient", patId);
+		mockJwtWithClaims(claims);
+
+		// create an Endpoint
+		IBaseResource endpoint = endpointResourceDao.create(new Endpoint()).getResource();
+		String endpointId = endpoint.getIdElement().getIdPart();
+
+		// search for all Endpoints
+		{
+			IQuery<Bundle> executable = client.search().forResource(Endpoint.class).returnBundle(Bundle.class).withAdditionalHeader("Authorization", MOCK_HEADER);
+			assertThrows(ForbiddenOperationException.class, executable::execute);
+		}
+
+		{
+			// now for a specific Endpoint
+			IReadExecutable<Endpoint> executable = client.read().resource(Endpoint.class).withId(endpointId).withAdditionalHeader("Authorization", MOCK_HEADER);
+			assertThrows(ForbiddenOperationException.class, executable::execute);
+		}
+	}
+
+	@Test
+	void testBuildRules_searchRecords_ExplicitlyAllowed() {
 
 		Map<String, Object> claims = new HashMap<>();
 		claims.put("scope", "patient/*.read");
@@ -1027,6 +1062,11 @@ class AuthorizationInterceptorTest {
 		Organization readOrg = client.read().resource(Organization.class).withId(orgId).withAdditionalHeader("Authorization", MOCK_HEADER).execute();
 		assertNotNull(readOrg);
 		assertEquals(readOrg.getIdElement().getIdPart(), orgId);
+
+		// make a change and try to update the Org, should fail
+		readOrg.setLanguage("Klingon");
+		IUpdateExecutable orgUpdateExecutable = client.update().resource(readOrg).withId(orgId).withAdditionalHeader("Authorization", MOCK_HEADER);
+		assertThrows(ForbiddenOperationException.class, orgUpdateExecutable::execute);
 	}
 
 	private static Stream<Arguments> getReadPatientClinicalScopes() {
