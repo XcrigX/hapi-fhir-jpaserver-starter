@@ -6,48 +6,30 @@ entries:
         # When using the list of objects option the valid supported kinds are
         # added, changed, deprecated, removed, fixed, and security.
         - kind: changed
-          description: |
-            BREAKING CHANGE: updated HAPI FHIR starter image to v6.0.1.
-            See <https://github.com/hapifhir/hapi-fhir/releases/tag/v6.0.0> for all application changes.
+          description: updated HAPI FHIR JPA Server app image version to v6.2.1
         - kind: changed
           description: |
-            updated included PostgreSQL-subchart to v11.6.2
-        - kind: fixed
-          description: |
-            use a fixed image for the wait-for-database container (docker.io/bitnami/postgresql:14.3.0-debian-10-r20)
-            instead of relying on the PostgreSQL sub-chart values
+            Reduced `startupProbe.initialDelaySeconds` to a more realistic `30` from `60`.
+            This should allow the server to become ready quicker and recover from failures faster.
         - kind: changed
-          description: |
-            expose actuator/metrics endpoint on a separate port (8081)
-        - kind: added
-          description: |
-            support for monitoring metrics using ServiceMonitor CRDs
-        - kind: changed
-          description: |
-            switched liveness and readiness probes to Spring Boot actuator endpoints
-        - kind: changed
-          description: |
-            BREAKING CHANGE: removed included `NetworkPolicy`, which is subject to more thorough rework
-        - kind: added
-          description: |
-            allow configuring `topologySpreadConstraints` for the deployment
+          description: "⚠️ BREAKING CHANGE: updated included postgresql chart to v12, which is based on PostgreSQL 15.1"
       artifacthub.io/license: Apache-2.0
     apiVersion: v2
-    appVersion: v6.0.1
-    created: "2022-06-30T18:29:38.182249142Z"
+    appVersion: 6.2.1
+    created: "2022-12-07T20:39:30.5057565Z"
     dependencies:
     - condition: postgresql.enabled
       name: postgresql
       repository: https://charts.bitnami.com/bitnami
-      version: 11.6.2
+      version: 12.1.2
     description: A Helm chart for deploying the HAPI FHIR JPA server starter on Kubernetes.
-    digest: 84476b9560bf5d0925972391e020bf8ac294680e0953abc418b44b9b3f467309
+    digest: 71a08ed7e34bd1c98b5422e10e2027dbb48fd3d892f6de70d6bb374bda06d065
     home: https://github.com/hapifhir/hapi-fhir-jpaserver-starter
     name: hapi-fhir-jpaserver
     sources:
     - https://github.com/hapifhir/hapi-fhir-jpaserver-starter
     type: application
     urls:
-    - https://github.com/XcrigX/hapi-fhir-jpaserver-starter/releases/download/helm-v0.9.0/hapi-fhir-jpaserver-0.9.0.tgz
-    version: 0.9.0
-generated: "2022-06-30T18:29:38.182262442Z"
+    - https://github.com/XcrigX/hapi-fhir-jpaserver-starter/releases/download/helm-v0.11.0/hapi-fhir-jpaserver-0.11.0.tgz
+    version: 0.11.0
+generated: "2022-12-07T20:39:30.5057713Z"
