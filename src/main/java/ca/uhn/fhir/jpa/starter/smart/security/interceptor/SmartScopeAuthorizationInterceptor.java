@@ -125,10 +125,10 @@ public class SmartScopeAuthorizationInterceptor extends AuthorizationInterceptor
 		authRuleBuilder.denyAll(RULE_DENY_ALL_UNKNOWN_REQUESTS);
 		ruleList.addAll(authRuleBuilder.build());
 
-		/*for (IAuthRule rule : ruleList) {
+		for (IAuthRule rule : ruleList) {
 			String ruleStr = rule.toString();
-			ourLog.debug("  our list ruleStr->{}", ruleStr);
-		}*/
+			ourLog.trace("  our list ruleStr->{}", ruleStr);
+		}
 
 
 		return ruleList;
