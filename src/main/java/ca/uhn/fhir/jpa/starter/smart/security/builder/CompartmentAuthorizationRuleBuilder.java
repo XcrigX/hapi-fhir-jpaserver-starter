@@ -33,33 +33,40 @@ public class CompartmentAuthorizationRuleBuilder extends SmartAuthorizationRuleB
 
 
 	protected void filterToResourceScope(IIdType resourceId, SmartClinicalScope smartClinicalScope, IAuthRuleBuilder rules) {
-		switch (smartClinicalScope.getOperation()) {
-		case ALL: {
-			applyResourceScopeClassifier(rules.allow().read(), resourceId, smartClinicalScope);
+		
+		//TODO: IAuthRuleBuilder cannot distinguish create and write as of yet, revisit w a future version
+		if( smartClinicalScope.canCreate()) {
 			applyResourceScopeClassifier(rules.allow().write(), resourceId, smartClinicalScope);
+		}
+		
+		if( smartClinicalScope.canRead()) {
+			applyResourceScopeClassifier(rules.allow().read(), resourceId, smartClinicalScope);
+		}
+		
+		if( smartClinicalScope.canUpdate()) {
+			applyResourceScopeClassifier(rules.allow().write(), resourceId, smartClinicalScope);
+		}
+		
+		if( smartClinicalScope.canDelete()) {
 			applyResourceScopeClassifier(rules.allow().delete(), resourceId, smartClinicalScope);
+		}
+		
+		if( smartClinicalScope.canSearch()) {
+			applyResourceScopeClassifier(rules.allow().read(), resourceId, smartClinicalScope);
+			checkAddPatientEverythingRule(rules, resourceId, smartClinicalScope);
+		}
+		
+		if( smartClinicalScope.canCruds()) {
 			// resource operations (type or instance level) may read, alter or delete data, should restrict to "*" scope
 			applyResourceScopeOperationClassifier(rules, resourceId, smartClinicalScope);
-			checkAddPatientEverythingRule(rules, resourceId, smartClinicalScope);
-			break;
-		}
-		case READ:
-			applyResourceScopeClassifier(rules.allow().read(), resourceId, smartClinicalScope);
-			checkAddPatientEverythingRule(rules, resourceId, smartClinicalScope);
-			break;
-		case WRITE:
-			applyResourceScopeClassifier(rules.allow().write(), resourceId, smartClinicalScope);
-			applyResourceScopeClassifier(rules.allow().create(), resourceId, smartClinicalScope);
-			applyResourceScopeClassifier(rules.allow().delete(), resourceId, smartClinicalScope);
-			break;
-		default:
-			throw new NotImplementedOperationException("Scope operation " + smartClinicalScope.getOperation().getOperation() + " not supported.");
 		}
 	}
 
 	protected void checkAddPatientEverythingRule(IAuthRuleBuilder rules, IIdType idType, SmartClinicalScope smartClinicalScope) {
 		// if we have patient/*.read or patient/*.* - punch in a patient$everything rule
-		if (smartClinicalScope.getResource().equalsIgnoreCase("*") && "Patient".equals(getCompartmentResource(smartClinicalScope.getCompartment()))) {
+		if (smartClinicalScope.getResource().equalsIgnoreCase("*") 
+				&& "Patient".equals(getCompartmentResource(smartClinicalScope.getCompartment()))
+				&& smartClinicalScope.canSearch()		) {
 			rules.allow().operation().named("$everything").onInstance(idType).andAllowAllResponses();
 		}
 	}

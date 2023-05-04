@@ -909,7 +909,7 @@ class AuthorizationInterceptorTest {
 		ForbiddenOperationException forbiddenOperationException = assertThrows(ForbiddenOperationException.class, patientSearchExecutable::execute);
 
 		// ASSERT
-		assertEquals("HTTP 403 : Read scope is required when performing a narrowing search operation", forbiddenOperationException.getMessage());
+		assertEquals("HTTP 403 : Read scope is required when performing a read operation", forbiddenOperationException.getMessage());
 	}
 
 	@Test
@@ -1124,6 +1124,16 @@ class AuthorizationInterceptorTest {
 						new HashMap<String, String>() {{
 							put("scope", "patient/Patient.read");
 						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/Patient.rs");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/*.rs");
+						}}
 						)
 				);
 	}
@@ -1141,7 +1151,20 @@ class AuthorizationInterceptorTest {
 							{
 								put("scope", "patient/*.*");
 							}
-						}));
+						}),
+				Arguments.of(
+						new HashMap<String, String>() {
+						{
+							put("scope", "patient/*.rs");
+						}
+					}),
+				Arguments.of(
+						new HashMap<String, String>() {
+						{
+							put("scope", "patient/*.cruds");
+						}
+					})
+				);
 	}
 
 	private static Stream<Arguments> getAllPatientClinicalScopes() {
@@ -1154,6 +1177,16 @@ class AuthorizationInterceptorTest {
 				Arguments.of(
 						new HashMap<String, String>() {{
 							put("scope", "patient/*.write");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/*.cruds");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/*.ud");
 						}}
 						)
 				);
@@ -1170,6 +1203,16 @@ class AuthorizationInterceptorTest {
 						new HashMap<String, String>() {{
 							put("scope", "patient/Patient.write");
 						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/Patient.cruds");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/Patient.ud");
+						}}
 						)
 				);
 	}
@@ -1184,6 +1227,16 @@ class AuthorizationInterceptorTest {
 				Arguments.of(
 						new HashMap<String, String>() {{
 							put("scope", "patient/Observation.write");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/Observation.cruds");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "patient/Observation.ud");
 						}}
 						)
 				);
@@ -1205,6 +1258,21 @@ class AuthorizationInterceptorTest {
 						new HashMap<String, String>() {{
 							put("scope", "user/*.*");
 						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "user/*.rs");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "user/Patient.rs");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "user/*.cruds");
+						}}
 						)
 				);
 	}
@@ -1225,6 +1293,22 @@ class AuthorizationInterceptorTest {
 				Arguments.of(
 						new HashMap<String, String>() {{
 							put("scope", "user/*.*");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "user/*.ud");
+
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "user/Patient.ud");
+						}}
+						),
+				Arguments.of(
+						new HashMap<String, String>() {{
+							put("scope", "user/*.cruds");
 						}}
 						)
 				);

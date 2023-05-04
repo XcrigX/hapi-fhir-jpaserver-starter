@@ -20,17 +20,41 @@ public class SmartClinicalScope {
 
 	private final String compartment;
 	private final String resource;
-	private final SmartOperationEnum operation;
+	//private final SmartOperationEnum operation;
+	
+	private boolean create; 
+	private boolean read;
+	private boolean update;
+	private boolean delete;
+	private boolean search;
+	
 
-	public SmartClinicalScope(String compartment, String resource, SmartOperationEnum operation) {
+	public SmartClinicalScope(String compartment, String resource) {
 		this.compartment = compartment;
 		this.resource = resource;
-		this.operation = operation;
 	}
 
 	@Override
 	public String toString() {
-		return "SmartClinicalScope [compartment=" + compartment + ", resource=" + resource + ", operation=" + operation + "]";
+		
+		StringBuilder sb = new StringBuilder();
+		if( create ) {
+			sb.append("c");
+		}
+		if( read ) {
+			sb.append("r");
+		}
+		if( update ) {
+			sb.append("u");
+		}
+		if( delete ) {
+			sb.append("d");
+		}
+		if( search ) {
+			sb.append("s");
+		}
+		
+		return "SmartClinicalScope [compartment=" + compartment + ", resource=" + resource + ", operation=" + sb.toString() + "]";
 	}
 
 	public SmartClinicalScope(String scope) {
@@ -39,7 +63,46 @@ public class SmartClinicalScope {
 			compartment = parts[0];
 			String[] resourceAndOperation = parts[1].split("[.]");
 			resource = resourceAndOperation[0];
-			operation = SmartOperationEnum.findByValue(resourceAndOperation[1]);
+			
+			
+			String scopeStr = resourceAndOperation[1];
+			if( "read".equals(scopeStr)) {
+				read = true;
+				search = true;
+			}
+			else if( "write".equals(scopeStr)) {
+				create = true;
+				update = true;
+				delete = true;
+			}
+			else if( "*".equals(scopeStr)) {
+				read = true;
+				search = true;
+				create = true;
+				update = true;
+				delete = true;
+			}
+			else {
+				//SMART v2 scope
+				if(!scopeStr.matches("c?r?u?d?s?")){
+					throw new InvalidClinicalScopeException(scope+" is not a valid clinical scope");
+				}
+				
+				for( char c : scopeStr.toCharArray()) {
+					if( 'c' == c ) {
+						create = true;
+					} else if( 'r' == c ) {
+						read = true;
+					} else if( 'u' == c ) {
+						update = true;
+					}else if( 'd' == c ) {
+						delete = true;
+					} else if( 's' == c ) {
+						search = true;
+					}
+				}
+			}
+			
 		} else{
 			throw new InvalidClinicalScopeException(scope+" is not a valid clinical scope");
 		}
@@ -71,8 +134,30 @@ public class SmartClinicalScope {
 		return resource;
 	}
 
-	public SmartOperationEnum getOperation() {
-		return operation;
+	public boolean canCreate() {
+		return create;
 	}
+
+	public boolean canRead() {
+		return read;
+	}
+
+	public boolean canUpdate() {
+		return update;
+	}
+
+	public boolean canDelete() {
+		return delete;
+	}
+
+	public boolean canSearch() {
+		return search;
+	}
+	
+	public boolean canCruds() {
+		return create && read && update && delete && search;
+	}
+
+	
 
 }

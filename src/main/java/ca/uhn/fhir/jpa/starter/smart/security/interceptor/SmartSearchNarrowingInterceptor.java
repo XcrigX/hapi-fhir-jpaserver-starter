@@ -3,7 +3,6 @@ package ca.uhn.fhir.jpa.starter.smart.security.interceptor;
 import ca.uhn.fhir.jpa.starter.smart.exception.InvalidClinicalScopeException;
 import ca.uhn.fhir.jpa.starter.smart.exception.InvalidSmartOperationException;
 import ca.uhn.fhir.jpa.starter.smart.model.SmartClinicalScope;
-import ca.uhn.fhir.jpa.starter.smart.model.SmartOperationEnum;
 import ca.uhn.fhir.jpa.starter.smart.util.JwtUtility;
 import ca.uhn.fhir.rest.api.RequestTypeEnum;
 import ca.uhn.fhir.rest.api.server.RequestDetails;
@@ -72,11 +71,15 @@ public class SmartSearchNarrowingInterceptor extends SearchNarrowingInterceptor 
 
 				for (SmartClinicalScope scope : scopes) {
 					String compartmentName = scope.getCompartment();
-					SmartOperationEnum operationEnum = scope.getOperation();
+					
 					String id = (String) claims.get(compartmentName);
 					if (compartmentName != null && !compartmentName.isEmpty()) {
-						if (operationEnum.equals(SmartOperationEnum.WRITE)) {
-							throw new ForbiddenOperationException("Read scope is required when performing a narrowing search operation");
+						if ( !scope.canRead() && !scope.canSearch()) {
+							throw new ForbiddenOperationException("Read scope is required when performing a read operation");
+						}
+						
+						if( !scope.canSearch() && theRequestDetails.getId() == null ){
+							throw new ForbiddenOperationException("Search scope is required when performing a search operation");
 						}
 
 						// the compartment names are coming from the scopes and are lower-case.
