@@ -34,9 +34,8 @@ public class CompartmentAuthorizationRuleBuilder extends SmartAuthorizationRuleB
 
 	protected void filterToResourceScope(IIdType resourceId, SmartClinicalScope smartClinicalScope, IAuthRuleBuilder rules) {
 		
-		//TODO: IAuthRuleBuilder cannot distinguish create and write as of yet, revisit w a future version
 		if( smartClinicalScope.canCreate()) {
-			applyResourceScopeClassifier(rules.allow().write(), resourceId, smartClinicalScope);
+			applyResourceScopeClassifier(rules.allow().create(), resourceId, smartClinicalScope);
 		}
 		
 		if( smartClinicalScope.canRead()) {
