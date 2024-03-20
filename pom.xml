@@ -115,6 +115,14 @@
             <groupId>ca.uhn.hapi.fhir</groupId>
             <artifactId>hapi-fhir-storage-cr</artifactId>
             <version>${project.version}</version>
+            <exclusions>
+                <!-- hapi-fhir-storage-cr brings in an older version of spring-security-core -->
+                <!-- remove when fixed: see https://github.com/hapifhir/hapi-fhir/issues/5793 -->
+                <exclusion>
+                    <groupId>org.springframework.security</groupId>
+                    <artifactId>spring-security-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <!-- This dependency includes the JPA MDM Server -->
         <dependency>
@@ -386,7 +394,7 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-security</artifactId>
@@ -398,7 +406,7 @@
             <artifactId>spring-boot-starter-oauth2-client</artifactId>
             <version>${spring_boot_version}</version>
         </dependency>
-        
+
         <!-- required to handle managed identity auth to sql server -->
         <dependency>
 			<groupId>com.azure.spring</groupId>

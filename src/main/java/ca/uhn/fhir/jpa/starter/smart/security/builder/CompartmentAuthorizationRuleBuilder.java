@@ -33,17 +33,20 @@ public class CompartmentAuthorizationRuleBuilder extends SmartAuthorizationRuleB
 
 
 	protected void filterToResourceScope(IIdType resourceId, SmartClinicalScope smartClinicalScope, IAuthRuleBuilder rules) {
-		
-		if( smartClinicalScope.canCreate()) {
-			applyResourceScopeClassifier(rules.allow().create(), resourceId, smartClinicalScope);
-		}
-		
+
 		if( smartClinicalScope.canRead()) {
 			applyResourceScopeClassifier(rules.allow().read(), resourceId, smartClinicalScope);
 		}
-		
+
+		//NOTE: write is not correct here - it should be update but the HAPI lib doesn't yet support that granularity.
+		//Also, the write rule must be applied before the create due to an implementation quirk/bug.
+		//See: https://github.com/hapifhir/hapi-fhir/issues/5715
 		if( smartClinicalScope.canUpdate()) {
 			applyResourceScopeClassifier(rules.allow().write(), resourceId, smartClinicalScope);
+		}
+
+		if( smartClinicalScope.canCreate()) {
+			applyResourceScopeClassifier(rules.allow().create(), resourceId, smartClinicalScope);
 		}
 		
 		if( smartClinicalScope.canDelete()) {

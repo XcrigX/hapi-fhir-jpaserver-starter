@@ -22,7 +22,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.boot.web.server.LocalServerPort;
+
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -487,6 +488,7 @@ class AuthorizationInterceptorTest {
 	@ParameterizedTest
 	@MethodSource({"getAllPatientClinicalScopes", "getWriteObservationClinicalScopes"})
 	void testBuildRules_updateObservationOnPatient_providedJwtContainsWriteScopesAndWrongId(Map<String, Object> claims) {
+
 		// ARRANGE
 		IBaseResource mockPatient = patientResourceDao.create(new Patient()).getResource();
 		IBaseResource otherPatient = patientResourceDao.create(new Patient()).getResource();

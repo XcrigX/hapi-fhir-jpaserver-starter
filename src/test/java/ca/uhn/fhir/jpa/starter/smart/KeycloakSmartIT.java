@@ -1,7 +1,8 @@
 package ca.uhn.fhir.jpa.starter.smart;
 
 import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.jpa.api.config.DaoConfig;
+
+import ca.uhn.fhir.jpa.api.config.JpaStorageSettings;
 import ca.uhn.fhir.jpa.api.dao.IFhirResourceDao;
 import ca.uhn.fhir.jpa.starter.Application;
 import ca.uhn.fhir.jpa.starter.smart.conf.FhirStarterTestContainers;
@@ -25,7 +26,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.LocalServerPort;
+
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -39,7 +41,10 @@ import org.springframework.web.client.RestTemplate;
 import static ca.uhn.fhir.jpa.starter.smart.AuthorizationInterceptorTest.ACCESS_DENIED_DUE_TO_SCOPE_RULE_EXCEPTION_MESSAGE;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = Application.class)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, classes = {Application.class}, properties = {
+	"hapi.fhir.client_id_strategy=ANY",
+	"hapi.fhir.server_id_strategy=UUID"
+})
 @ExtendWith(MockitoExtension.class)
 @ContextConfiguration(initializers = FhirStarterTestContainers.KeycloakContainerInitializer.class)
 @ActiveProfiles("smart")
@@ -49,8 +54,8 @@ class KeycloakSmartIT {
 	private static String baseKeycloakUrl;
 
 	// IDs returned as test data from Keycloak (src/test/resources/keycloak/realm.json#users)
-	private static final String PATIENT_ATTRIBUTE = "101";
-	private static final String PRACTITIONER_ATTRIBUTE = "102";
+	private static final String PATIENT_ATTRIBUTE = "PAT101";
+	private static final String PRACTITIONER_ATTRIBUTE = "PAT102";
 
 	@LocalServerPort
 	private int port;
@@ -61,9 +66,6 @@ class KeycloakSmartIT {
 	private IFhirResourceDao<Observation> observationResourceDao;
 	@Autowired
 	private IFhirResourceDao<Practitioner> practitionerResourceDao;
-
-	@Autowired
-	DaoConfig daoConfig;
 
 	private IGenericClient client;
 	private FhirContext ctx;
@@ -78,8 +80,6 @@ class KeycloakSmartIT {
 
 	@BeforeEach
 	void beforeEach() {
-		daoConfig.setResourceServerIdStrategy(DaoConfig.IdStrategyEnum.UUID);
-		daoConfig.setResourceClientIdStrategy(DaoConfig.ClientIdStrategyEnum.ANY);
 		ctx = FhirContext.forR4();
 		ctx.getRestfulClientFactory().setServerValidationMode(ServerValidationModeEnum.NEVER);
 		ctx.getRestfulClientFactory().setSocketTimeout(1200 * 1000);
@@ -105,7 +105,7 @@ class KeycloakSmartIT {
 	@Test
 	void getPatientAsPatient_wrongPatientId() throws JSONException {
 		// ARRNAGE
-		String mockId = "6";
+		String mockId = "PAT6";
 		Patient createdResource = getPatient(mockId);
 
 		String jwt = getJwtToken("patient", "patient", "patient/*.read");
